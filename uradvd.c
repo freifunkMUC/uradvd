@@ -47,12 +47,12 @@
 /* These are in seconds */
 #define AdvValidLifetime 86400u
 #define AdvPreferredLifetime 14400u
-#define AdvDefaultLifetime 0u
+#define AdvDefaultLifetime 60u
 #define AdvCurHopLimit 64u
 #define AdvRDNSSLifetime 1200u
 
-#define MinRtrAdvInterval 200u
-#define MaxRtrAdvInterval 600u
+#define MinRtrAdvInterval 20u
+#define MaxRtrAdvInterval 50u
 
 /* And these in milliseconds */
 #define MAX_RA_DELAY_TIME 500u
