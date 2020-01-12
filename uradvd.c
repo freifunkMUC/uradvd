@@ -44,7 +44,7 @@
 /* These are in seconds */
 #define AdvValidLifetime 180u
 #define AdvPreferredLifetime 120u
-#define AdvDefaultLifetime 60u
+#define AdvDefaultLifetime 180u
 #define AdvCurHopLimit 64u
 #define AdvRDNSSLifetime 1200u
 
