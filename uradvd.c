@@ -55,6 +55,7 @@
 #define MAX_RA_DELAY_TIME 500u
 #define MIN_DELAY_BETWEEN_RAS 3000u
 
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(*arr))
 
 enum {
 	OPT_DEFAULT_LIFETIME,
@@ -544,12 +545,12 @@ static void send_advert(void) {
 			memcpy(rdnss_ips[i], G.rdnss[i].s6_addr, 16);
 	}
 
-	struct iovec vec[5] = {
+	struct iovec vec[] = {
 		{ .iov_base = &advert, .iov_len = sizeof(advert) },
 		{ .iov_base = &lladdr, .iov_len = sizeof(lladdr) },
 		{ .iov_base = prefixes, .iov_len = sizeof(prefixes) },
-		{ .iov_base = &rdnss, .iov_len = sizeof(rdnss) },
-		{ .iov_base = rdnss_ips, .iov_len = sizeof(rdnss_ips) }
+		G.n_rdnss > 0 ? (struct iovec){ .iov_base = &rdnss, .iov_len = sizeof(rdnss) } : (struct iovec){ .iov_len = 0 },
+		G.n_rdnss > 0 ? (struct iovec){ .iov_base = rdnss_ips, .iov_len = sizeof(rdnss_ips) } : (struct iovec){ .iov_len = 0 },
 	};
 
 	struct sockaddr_in6 addr = {
@@ -572,7 +573,7 @@ static void send_advert(void) {
 		.msg_name = &addr,
 		.msg_namelen = sizeof(addr),
 		.msg_iov = vec,
-		.msg_iovlen = G.n_rdnss > 0 ? 5 : 3,
+		.msg_iovlen = ARRAY_SIZE(vec),
 		.msg_control = cbuf,
 		.msg_controllen = 0,
 		.msg_flags = 0,
