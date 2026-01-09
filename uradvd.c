@@ -749,6 +749,9 @@ static void parse_cmdline(int argc, char *argv[]) {
 				if (!*optarg || *endptr || val < 1280 || val > UINT16_MAX)
 					exit_error("invalid advertised link MTU\n", 0);
 
+				if (val == 0)
+					val = 1375; /* FFBS/FFMUC: hardcode default wireguard MTU */
+
 				G.adv_link_mtu = val;
 
 				break;
