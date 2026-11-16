@@ -3,18 +3,21 @@
 A tiny IPv6 router advertisement daemon.
 
 ```
-Usage: uradvd [-h] -i <interface> -a/-p <prefix> [ -a/-p <prefix> ... ]
+Usage: uradvd [-h] -i <interface> -a/-p <prefix>[,<pref>[,<valid>]]
+[ -a/-p <prefix>[,<pref>[,<valid>]] ... ]
 [ --default-lifetime <seconds> ] [ --rdnss <ip> ... ]
 [ --valid-lifetime <seconds> ] [ --preferred-lifetime <seconds> ]
 [ --max-router-adv-interval <seconds> ] [ --min-router-adv-interval <seconds> ]
 [ --adv-link-mtu <bytes> ]
 [ --pref64 <prefix>/<len> ]
+[ --state-file <file> ]
 [ --version ]
 ```
 
 * `-i <interface>`: interface to listen on (e.g. `eth0`)
 * `-a <prefix>`: IPv6 prefix (e.g. `2001:db8:1::/32`) that can be used for stateless address configuration (SLAAC). The `A` flag of the IPv6 Router Advertisement message is set.
 * `-p <prefix>`: Similar to `-a`. But the `A` and `L` flags are set. The `L` flags means that IPv6 addresses within that prefix are on the same L2 subnet. In doubt, use this option over `-a`.
+* `<prefix>,<pref>,<valid>`: You can add a preferred and a valid lifetime in seconds to each prefix (e.g. `2001:db8:1::/64,0,600`). Without them, the prefix uses `--preferred-lifetime` and `--valid-lifetime`.
 * `--default-lifetime <seconds>`: lifetime of the default route (default is `0` => do not use router as a default route)
 * `--rdnss <ip>`: DNS server (e.g. `2001:4860:4860::8888`)
 * `--valid-lifetime <seconds>`: The total time the prefix remains available before becoming unusable (default is `86400` seconds => one day)
@@ -23,6 +26,7 @@ Usage: uradvd [-h] -i <interface> -a/-p <prefix> [ -a/-p <prefix> ... ]
 * `--min-router-adv-interval <seconds>`: The minimum time allowed between sending unsolicited multicast router advertisements from the interface, in seconds. (default is `200` seconds => 3m20s)
 * `--adv-link-mtu <bytes>`: The MTU option is used in RA messages to ensure that all nodes on a link use the same MTU value in those cases where the link MTU is not well known. (is omitted unless set)
 * `--pref64 <prefix>/<len>`: The NAT64 prefix used for IPv6 address synthesis by clients, as defined in RFC 8781, in CIDR notation.
+* `--state-file <file>`: Read the prefixes and DNS servers from this file. Each line is `<prefix>[,<pref>[,<valid>]]` or `rdnss <ip>`. uradvd reads the file at start and again on `SIGHUP`. After `SIGHUP`, uradvd sends three RAs, 3 seconds apart. When the file is not valid, uradvd keeps the old state. With this option, one uradvd can announce the prefixes of more than one uplink in one RA, each with its own lifetimes.
 * `--version`: Display the version number of the invoked uradvd.
 
 This program is packaged for [OpenWrt](https://openwrt.org/) and [NixOS](https://nixos.org/).
