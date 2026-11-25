@@ -60,6 +60,9 @@
 #define MAX_RA_DELAY_TIME 500u
 #define MIN_DELAY_BETWEEN_RAS 3000u
 
+/* As DHCPv4 option 114 (RFC 8910), which holds at most 255 bytes. */
+#define MAX_CAPTIVE_PORTAL 255
+
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(*arr))
 #define IOVEC(buf) ((struct iovec){ .iov_base = &(buf), .iov_len = sizeof(buf) })
 #define IOVEC_IF(cond, buf) ((cond) ? IOVEC(buf) : (struct iovec){})
@@ -73,6 +76,7 @@ enum {
 	OPT_MIN_ROUTER_ADV_INTERVAL,
 	OPT_ADV_LINK_MTU,
 	OPT_PREF64,
+	OPT_CAPTIVE_PORTAL,
 	OPT_STATE_FILE,
 	OPT_VERSION,
 };
@@ -143,6 +147,10 @@ static struct global {
 	bool pref64_enabled;
 	uint8_t pref64_prefix[12]; // 96 bits
 	uint8_t pref64_plc;
+
+	/* The complete RFC 8910 option: type, length, URI, NUL padding. */
+	size_t captive_portal_len;
+	uint8_t captive_portal[2 + MAX_CAPTIVE_PORTAL + 7];
 } G = {
 	.rtnl_sock = -1,
 	.icmp_sock = -1,
@@ -618,6 +626,7 @@ static void send_advert(void) {
 		IOVEC_IF(G.n_rdnss > 0, rdnss_ips),
 		IOVEC_IF(G.adv_link_mtu > 0, mtu),
 		IOVEC_IF(G.pref64_enabled, pref64),
+		{ .iov_base = G.captive_portal, .iov_len = G.captive_portal_len },
 	};
 
 	struct sockaddr_in6 addr = {
@@ -673,6 +682,7 @@ static void usage(void) {
 			"[ --max-router-adv-interval <seconds> ] [ --min-router-adv-interval <seconds> ]\n"
 			"[ --adv-link-mtu <bytes> ]\n"
 			"[ --pref64 <prefix>/<len> ]\n"
+			"[ --captive-portal <uri> ]\n"
 			"[ --state-file <file> ]\n"
 			"[ --version ]\n");
 }
@@ -760,6 +770,21 @@ static void add_pref64(const char *prefix) {
 	G.pref64_enabled = true;
 
 	return;
+}
+
+/* RFC 8910, Section 2.3: the URI, padded with NUL bytes to a multiple of
+   8 bytes for the whole option. */
+static void set_captive_portal(const char *uri) {
+	size_t len = strlen(uri);
+
+	if (len == 0 || len > MAX_CAPTIVE_PORTAL)
+		exit_error("invalid captive portal URI\n", 0);
+
+	memset(G.captive_portal, 0, sizeof(G.captive_portal));
+	G.captive_portal_len = (2 + len + 7) & ~(size_t)7;
+	G.captive_portal[0] = 37;
+	G.captive_portal[1] = G.captive_portal_len / 8;
+	memcpy(G.captive_portal + 2, uri, len);
 }
 
 static bool parse_lifetime(const char *str, uint32_t *out) {
@@ -907,6 +932,7 @@ static void parse_cmdline(int argc, char *argv[]) {
 		[OPT_MIN_ROUTER_ADV_INTERVAL] = {"min-router-adv-interval", required_argument, 0, 0},
 		[OPT_ADV_LINK_MTU] = {"adv-link-mtu", required_argument, 0, 0},
 		[OPT_PREF64] = {"pref64", required_argument, 0, 0},
+		[OPT_CAPTIVE_PORTAL] = {"captive-portal", required_argument, 0, 0},
 		[OPT_STATE_FILE] = {"state-file", required_argument, 0, 0},
 		[OPT_VERSION] = {"version", 0, 0, 0},
 		{0, 0, 0, 0}
@@ -988,6 +1014,10 @@ static void parse_cmdline(int argc, char *argv[]) {
 
 			case OPT_PREF64:
 				add_pref64(optarg);
+				break;
+
+			case OPT_CAPTIVE_PORTAL:
+				set_captive_portal(optarg);
 				break;
 
 			case OPT_STATE_FILE:

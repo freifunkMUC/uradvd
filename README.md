@@ -10,6 +10,7 @@ Usage: uradvd [-h] -i <interface> -a/-p <prefix>[,<pref>[,<valid>]]
 [ --max-router-adv-interval <seconds> ] [ --min-router-adv-interval <seconds> ]
 [ --adv-link-mtu <bytes> ]
 [ --pref64 <prefix>/<len> ]
+[ --captive-portal <uri> ]
 [ --state-file <file> ]
 [ --version ]
 ```
@@ -26,6 +27,7 @@ Usage: uradvd [-h] -i <interface> -a/-p <prefix>[,<pref>[,<valid>]]
 * `--min-router-adv-interval <seconds>`: The minimum time allowed between sending unsolicited multicast router advertisements from the interface, in seconds. (default is `200` seconds => 3m20s)
 * `--adv-link-mtu <bytes>`: The MTU option is used in RA messages to ensure that all nodes on a link use the same MTU value in those cases where the link MTU is not well known. (is omitted unless set)
 * `--pref64 <prefix>/<len>`: The NAT64 prefix used for IPv6 address synthesis by clients, as defined in RFC 8781, in CIDR notation.
+* `--captive-portal <uri>`: The URI of the captive portal API (RFC 8908), sent in the RA captive portal option (RFC 8910). At most 255 bytes. (is omitted unless set)
 * `--state-file <file>`: Read the prefixes and DNS servers from this file. Each line is `<prefix>[,<pref>[,<valid>]]` or `rdnss <ip>`. uradvd reads the file at start and again on `SIGHUP`. After `SIGHUP`, uradvd sends three RAs, 3 seconds apart. When the file is not valid, uradvd keeps the old state. With this option, one uradvd can announce the prefixes of more than one uplink in one RA, each with its own lifetimes.
 * `--version`: Display the version number of the invoked uradvd.
 
